@@ -5,6 +5,9 @@
 
 library(dplyr)
 library(tidyr)
+library(data.table)
+library(cowplot)
+library(ggplot2)
 library(ggtern)
 library(MetBrewer)
 library(ggrastr)
@@ -359,6 +362,174 @@ ggtern(data=gW_bulk %>% filter(Age >= 0.1 | Region >= 0.1 | Celltype >= 0.1),
   scale_color_distiller(palette = 4,direction="horizontal")
 dev.off()
 
+allBound <- fread('../data/flIso_oneRegionVsAll_perCellType.gz')
+
+numSig <- allBound %>%
+    mutate(sigStatus = case_when(FDR <= 0.05 & abs(dPI) >= 0.1 ~ "Sig",
+                                                              TRUE ~ "NonSig")) %>%
+    select(Region,Type,sigStatus) %>% 
+    group_by_all() %>% add_count() %>% distinct() %>% 
+    ungroup() %>% group_by(Region,Type) %>%
+    mutate(perc = n*100/sum(n))
+
+numSig$Region <- factor(numSig$Region, 
+                        levels <- c("VisCortex","Hippocampus","Striatum","Thalamus","Cerebellum"))
+numSig$Type <- factor(numSig$Type, levels <- c("Astro","Oligo","Immune","InhibNeuron","ExciteNeuron"))
+
+## Plot number of significant genes per brain region -----
+options(repr.plot.width=10, repr.plot.height=8)
+
+g1 = ggplot(numSig %>% filter(sigStatus == "Sig"),
+      aes(x = Type, y = perc, fill = Region)) +
+    geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+    theme_classic(base_size = 20) + 
+    scale_fill_manual(values = c("#debbc6","#fdc681","#9c9648","#7e9a66","#50939a")) +
+    theme(legend.position = "bottom")
+
+pdf('../Plots/PercSignificantPerBR.pdf',10,8,useDingbats = FALSE)
+g1
+dev.off()
+
+## Preprocessing for getting the number of overlaps between regions -----
+uniqPerRegion <- allBound %>%
+    mutate(sigStatus = case_when(FDR <= 0.05 & abs(dPI) >= 0.1 ~ "Sig",
+                                                              TRUE ~ "NonSig")) %>%
+      filter(sigStatus == "Sig") %>% ungroup() %>%
+      select(Gene,Type) %>%
+      group_by_all() %>% add_count() %>% distinct()
+
+numOverlaps <- table(uniqPerRegion[,c(2:3)]) %>% as.data.frame() %>% 
+    group_by(Type) %>% mutate(Perc = Freq/sum(Freq))
+
+numOverlaps$Type <- factor(numOverlaps$Type, 
+                           levels <- c("Astro","Oligo","Immune","ExciteNeuron","InhibNeuron"))
+numOverlaps$n <- factor(numOverlaps$n,5:1)
+
+### Plot number of overlaps -----
+g3 <- ggplot(numOverlaps, aes(x = Type, y = Perc, fill = n)) +
+    geom_bar(stat = "identity", width = 0.7) +
+    theme_classic(base_size = 20) +
+    scale_fill_brewer(name = "# of regions", palette = "Greys",direction = -1) +
+    ylab("% of sig genes")
+    
+pdf('../Plots/numRegOverlaps_perCT.pdf',10,8,useDingbats = FALSE)
+g3
+dev.off()
+
+## Cumulative matrix pre-processing ------
+cumuMat <- NULL
+for (i in seq(0,1,length.out = 11)){
+    cumuMat[[as.character(i)]] <- allBound %>% select(Gene,FDR,dPI,Region,Type) %>% 
+     mutate(sigStatus = case_when(FDR <= 0.05 & abs(dPI) >= i ~ "Sig",
+                                  TRUE ~ "NonSig")) %>%
+     select(Region,Type,sigStatus) %>% group_by_all() %>%
+     add_count() %>% distinct() %>% ungroup() %>%
+     group_by(Region,Type) %>% mutate(perc = n/sum(n), cutoff = i)
+}
+
+cumuDF <- do.call('rbind',cumuMat)
+
+cumuDF$Region <- factor(cumuDF$Region, 
+                        levels <- c("VisCortex","Hippocampus","Striatum","Thalamus","Cerebellum"))
+cumuDF$Type <- factor(cumuDF$Type, levels <- c("Astro","Oligo","Immune","InhibNeuron","ExciteNeuron"))
+
+### Plot cumulative stats ------
+options(repr.plot.width=16, repr.plot.height=5)
+
+cp <- ggplot(cumuDF %>% filter(sigStatus == "Sig" & cutoff >0 & cutoff <1),
+       aes(x = cutoff,y = perc, col = Region)) +
+    geom_point(size = 3) + geom_line(size =1) +
+    facet_wrap(~Type,nrow = 1) +
+    scale_x_reverse(breaks = seq(1,0,length.out = 11)) + 
+    theme_classic(base_size = 20) +
+    scale_color_manual(values = c("#debbc7","#fdc681","#9c9648","#7e9a66","#50939a")) +
+    ylab("Signif genes (%)") + theme(axis.text.x = element_text(angle = 90),
+                                     legend.position = "bottom")
+                                     
+pdf('../Plots/cumulativePlots_perCT.pdf',16,5,useDingbats = FALSE)
+cp
+dev.off()
+
+## Rug plot of significant genes x cell type per region -----
+drawRugPlot <- function(ct){
+    wideDF <- allBound %>% mutate(sigStatus = case_when(FDR <= 0.05 & abs(dPI) >= 0.1 ~ 1,
+                                                                  TRUE ~ 0.5)) %>%
+         select(Gene,Region,Type,sigStatus) %>% filter(Type == ct) %>%
+         pivot_wider(names_from = Region, values_from = sigStatus) %>% 
+        replace(is.na(.),0)
+
+    wideDF <- wideDF %>% filter_all(any_vars(. == 1))
+
+    wideDF2 <- scale(wideDF[,-c(1:2)])
+    ord <- hclust( dist(wideDF2, method = "euclidean"), method = "ward.D" )$order
+    ord2 <- hclust( dist(t(wideDF2), method = "euclidean"), method = "ward.D" )$order
+
+    ctDF <- reshape2::melt(wideDF,c("Gene","Type"))
+    colnames(ctDF)[3:4] <- c("Region","SigStatus")
+
+    ctDF$SigStatus <- plyr::mapvalues(ctDF$SigStatus,from = c(0.5,0,1),to = c("NonSig","Untested","Sig"))
+
+    ctDF$Gene <- factor(ctDF$Gene, levels = wideDF$Gene[ord])
+    ctDF$Region <- factor(ctDF$Region, levels = colnames(wideDF2)[ord2])
+
+    options(repr.plot.width=8, repr.plot.height=6)
+
+    ro <- ggplot(ctDF,aes(x = Region,y = Gene, fill = SigStatus)) +
+        geom_tile() +
+        theme_classic(base_size = 20) +
+        theme(axis.text.y = element_blank()) +
+        scale_fill_manual(values = c("#1D1E24","#921A1D","#FCEEDF"))
+
+    pdf(paste0('../Plots/rugPlot_',ct,'.pdf'),8,6,useDingbats = FALSE)
+    print(ro)
+    dev.off()
+    
+    return()
+
+}
+
+### Rug plot construction -----
+cts <- c("Astro","Oligo","Immune","InhibNeuron","ExciteNeuron")
+rugPlots <- lapply(cts, function(ct) drawRugPlot(ct))
+
+
+# TSS and PolyA site representation -------
+
+## Read in tss-polya site usage info -----
+allBound <- fread('../data/endSites_oneRegionVsAll_perCellType.gz')
+
+cumuMat <- NULL
+for (i in seq(0,1,length.out = 11)){
+    cumuMat[[as.character(i)]] <- allBound %>% select(Gene,FDR,dPI,Region,Type,endSite) %>% 
+     mutate(sigStatus = case_when(FDR <= 0.05 & abs(dPI) >= i ~ "Sig",
+                                  TRUE ~ "NonSig")) %>%
+     select(Region,Type,endSite,sigStatus) %>% group_by_all() %>%
+     add_count() %>% distinct() %>% ungroup() %>%
+     group_by(Region,Type,endSite) %>% mutate(perc = n/sum(n), cutoff = i)
+}
+
+cumuDF <- do.call('rbind',cumuMat)
+
+cumuDF$Region <- factor(cumuDF$Region, 
+                        levels <- c("VisCortex","Hippocampus","Striatum","Thalamus","Cerebellum"))
+cumuDF$Type <- factor(cumuDF$Type, levels <- c("Astro","Oligo","Immune","InhibNeuron","ExciteNeuron"))
+cumuDF$endSite <- factor(cumuDF$endSite, levels <- c("TSS","PolyA"))
+
+## Plot TSS and PolyA site differences per region -----
+options(repr.plot.width=12, repr.plot.height=6)
+
+pdf('../Plots/barPlot_numSig_tssPolyA.pdf',12,6,useDingbats = FALSE)
+ggplot(cumuDF %>% filter(sigStatus == "Sig" & cutoff == 0.1),
+      aes(x = Region, y = perc*100, fill = interaction(endSite,Region) )) +
+    facet_wrap(~Type,nrow = 1) +
+    geom_bar(stat = "identity", position = "dodge") + 
+    theme_classic(base_size = 18) +
+    theme(axis.text.x = element_text(angle = 90)) +
+    ylab("Significant genes (%)") + 
+    scale_fill_manual(values = c("#debbc7","#AF8494","#fdc681","#DEA05E",
+                                  "#f68d61","#685E27","#7e9a66","#4E7134","#50939a","#226C70"))
+dev.off()
+           
 
 
 # SessionInfo ------
@@ -379,4 +550,4 @@ dev.off()
 # 
 # other attached packages:
 # [1] igraph_1.2.6    ggsignif_0.6.4  ggrastr_1.0.1   MetBrewer_0.2.0 ggtern_3.3.5    ggplot2_3.3.6  
-# [7] tidyr_1.2.0     dplyr_1.0.9  circlize_0.4.15       ComplexHeatmap_2.13.1
+# [7] tidyr_1.2.0     dplyr_1.0.9  circlize_0.4.15       ComplexHeatmap_2.13.1    cowplot_1.1.1 data.table_1.13.6
