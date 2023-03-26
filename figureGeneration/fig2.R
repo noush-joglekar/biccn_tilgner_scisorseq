@@ -18,7 +18,7 @@ library(circlize)
 
 # Cell type -------
 ## Read in cell type data --------
-gW <- read.table('../data/genomeWide_withContribs',
+gW <- fread('../data/genomeWide_withContribs.gz',
                         sep = "\t",header = T) 
 
 gW <- gW %>% separate("isoID",c("Gene","ID"),sep = "-",extra = "merge",remove = FALSE) 
@@ -330,7 +330,7 @@ dev.off()
 
 # Bulk ------
 ## Preprocessing bulk ----
-gW_bulk <- read.table('../data/genomeWide_bulk', header = T)
+gW_bulk <- fread('../data/genomeWide_bulk.gz', header = T)
 
 gW_bulk <- gW_bulk %>% separate("isoID",c("Gene","ID"),sep = "-",extra = "merge",remove = FALSE) 
 
