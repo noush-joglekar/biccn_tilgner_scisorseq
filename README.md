@@ -2,9 +2,9 @@
 Code for the BRAIN Initiative Cell Census Network (BICCN) - RF1 Tilgner
 
 Until recently, technological limitations prevented a genome-wide appraisal of the influence of isoform expression
-on the establishment and persistence of cell identity in various parts of the brain. Using an enhanced method of \
-long-read single-cell isoform sequencing (ScISOr-Seq2), we performed a comprehensive analysis of RNA isoforms in \
-mouse brain across multiple brain regions, cell subtypes, and a range of developmental timepoints from postnatal \
+on the establishment and persistence of cell identity in various parts of the brain. Using an enhanced method of
+long-read single-cell isoform sequencing (ScISOr-Seq2), we performed a comprehensive analysis of RNA isoforms in
+mouse brain across multiple brain regions, cell subtypes, and a range of developmental timepoints from postnatal
 day 14 (P14) to adult (P56).
 
 
