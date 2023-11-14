@@ -45,5 +45,5 @@ Additionally, the following raw and processed data is /will be made available on
   - exon chain
 - BED12 files per processed long read
 
-If you have questions, please do not hesitate to open an issue or reach out over [email](ajoglekar@nygenome.org) to me
+If you have questions, please do not hesitate to open an issue or reach out over email to [me](mailto:ajoglekar@nygenome.org)
 or the corresponding author.
