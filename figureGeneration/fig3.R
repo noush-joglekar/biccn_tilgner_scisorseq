@@ -209,7 +209,7 @@ pdf('../Plots/adultAndDevel_spearmanCorr.pdf',width = 12,height = 10,useDingbats
 ht
 dev.off()
 
-## Circos plot -------
+## Circos plot -------  ### now a supplemental figure
 ### Adult only - visualize CELL TYPE variability ------
 
 all_eVex <- read.table('../data/threeAxes_eVex_df_forCircos_adult',sep = "\t", header = T)
@@ -470,6 +470,8 @@ pdf('../Plots/EVex_superFamilies_percent.pdf',8,8)
 g
 dev.off()
 
+## Analysis with RBPs and sQTLs appears here ---
+## will likely have a different file
 
 ## GO analysis adult brain-region specificity ------
 evexGenes_uniq <- evex %>%

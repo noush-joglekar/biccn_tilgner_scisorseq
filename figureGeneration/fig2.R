@@ -18,7 +18,7 @@ library(circlize)
 
 # Cell type -------
 ## Read in cell type data --------
-gW <- fread('../data/genomeWide_withContribs.gz',
+gW <- fread('../data/genomeWide_withContribs.gz', ## with threshold now
                         sep = "\t",header = T) 
 
 gW <- gW %>% separate("isoID",c("Gene","ID"),sep = "-",extra = "merge",remove = FALSE) 
@@ -376,7 +376,7 @@ numSig$Region <- factor(numSig$Region,
                         levels <- c("VisCortex","Hippocampus","Striatum","Thalamus","Cerebellum"))
 numSig$Type <- factor(numSig$Type, levels <- c("Astro","Oligo","Immune","InhibNeuron","ExciteNeuron"))
 
-## Plot number of significant genes per brain region -----
+## Plot number of significant genes per brain region ----- 
 options(repr.plot.width=10, repr.plot.height=8)
 
 g1 = ggplot(numSig %>% filter(sigStatus == "Sig"),
@@ -449,6 +449,8 @@ cp <- ggplot(cumuDF %>% filter(sigStatus == "Sig" & cutoff >0 & cutoff <1),
 pdf('../Plots/cumulativePlots_perCT.pdf',16,5,useDingbats = FALSE)
 cp
 dev.off()
+
+## bootstrapping summary figure should appear above. Similar plotting tho
 
 ## Rug plot of significant genes x cell type per region -----
 drawRugPlot <- function(ct){
