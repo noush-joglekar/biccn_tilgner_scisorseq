@@ -306,3 +306,96 @@ sessionInfo()
 # [125] shiny_1.5.0                 base64enc_0.1-3   
 
 ## Short read Fig 5b
+load('seuratObjects/harmony_hippDev.Robj')
+load('seuratObjects/harmony_visDev.Robj')
+
+aE_Hipp <- AverageExpression(hipp)
+aE_Vis <- AverageExpression(vis)
+
+glia_hipp <- colnames(aE_Hipp$RNA)
+aE_Hipp_all_glia <- aE_Hipp$RNA[,glia_hipp[grepl("Astro|COP|OPC|MOL|MFOL",glia_hipp)]]
+colnames(aE_Hipp_all_glia) <- paste("Hipp",colnames(aE_Hipp_all_glia),sep = "_")
+
+glia_vis <- colnames(aE_Vis$RNA)
+aE_Vis_all_glia <- aE_Vis$RNA[,glia_vis[grepl("Astro|COP|OPC|MOL|MFOL",glia_vis)]]
+colnames(aE_Vis_all_glia) <- paste("Vis",colnames(aE_Vis_all_glia),sep = "_")
+
+aE_all_glia <- merge(aE_Hipp_all_glia,aE_Vis_all_glia,by = 0) %>% column_to_rownames('Row.names')
+gliaNames <- colnames(aE_all_glia)
+
+## to remove:
+dfCountsH <- as.data.frame(table(hipp$Subtype,hipp$Age))
+colnames(dfCountsH)[1:2] <- c("Subtype","Age")
+lowDFCountsHG <- dfCountsH %>% filter(grepl("Astro|COP|OPC|MOL|MFOL",Subtype )) %>%
+  filter(Freq <= 50)
+
+dfCountsV <- as.data.frame(table(vis$Subtype,vis$Age))
+colnames(dfCountsV)[1:2] <- c("Subtype","Age")
+lowDFCountsVG <- dfCountsV %>% filter(grepl("Astro|COP|OPC|MOL|MFOL",Subtype )) %>%
+  filter(Freq <= 50)
+
+gliaNames <- gliaNames[!grepl("Div|Vis_MOLs_P14|Vis_MFOLs_P56",gliaNames)]
+
+aE_all_glia <- aE_all_glia[,gliaNames]
+
+cg <- data.frame(CT = colnames(aE_all_glia))
+cg <- cg %>% separate(CT, into = c("Region","Subtype","Age"))
+
+colPal <- read.csv('../colorPalette.csv', header = FALSE)
+colnames(colPal) <- c("Color","Subtype")
+
+subtypes <- colPal %>% filter(grepl("Astro|COP|OPC|MOL|MFOL",Subtype ) & Subtype != "DivOPCs") %>% .$Subtype
+subtype_cols <- colPal %>% filter(grepl("Astro|COP|OPC|MOL|MFOL",Subtype ) & Subtype != "DivOPCs") %>% .$Color
+  
+regions <- c("Vis","Hipp")
+reg_cols <- c("#ddbbc6","#fdc681")
+
+ages <- c("P14","P21","P28","P56")
+age_cols <- c("#ae3b24","#c8812a","#56632c","#f68d62")
+
+ha = rowAnnotation(
+  Subtype = cg$Subtype,
+  Age = cg$Age,
+  Region = cg$Region,
+  
+  col = list(Subtype = structure(subtype_cols,names = subtypes),
+             Age = structure(age_cols, names = ages),
+             Region = structure(reg_cols,names = regions)),
+  
+  annotation_legend_param = list(
+    Subtype = list(
+      title = "Subtype",
+      at = subtypes,
+      labels = subtypes
+    ),
+    Age = list(
+      title = "Age",
+      at = ages,
+      labels = ages
+    ),
+    Region = list(
+      title = "Region",
+      at = regions,
+      labels = regions
+    )
+  )
+)
+
+
+
+
+c_g_all <- cor(aE_all_glia,use = "complete",method = "spearman")
+superheat(c_g_all,
+          bottom.label.text.angle = 90,
+          bottom.label.text.size = 3,
+          left.label.text.size = 3,
+          col.dendrogram = T,
+          pretty.order.rows = T,
+          heat.pal = viridis::magma(100))
+
+
+col_func <- colorRamp2(seq(0.8,1,length.out = 7),
+                       brewer.pal(7,"BrBG"))
+
+## Fig 5b --------
+Heatmap(c_g_all,col = col_func,left_annotation = ha)
