@@ -35,8 +35,8 @@ Additionally, the following raw and processed data is /will be made available on
 Links to mouse data:
 - Short read Illumina reads [fastqs](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/10x_v3/mouse/raw/)
 - Cellranger output files [mtx, tsv](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/10x_v3/mouse/processed/counts/),
-- Raw long-read sequencing data sequenced on (PacBio)[https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/pacbio/mouse/raw/] and (ONT)[https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/raw/]
-- AllInfo files per processed (ONT)[https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/processed/other/] long read containing
+- Raw long-read sequencing data sequenced on [PacBio](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/pacbio/mouse/raw/) and [ONT](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/raw/)
+- AllInfo files per processed [ONT](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/processed/other/) long read containing
   - cell barcode
   - assigned cell type
   - UMI
@@ -44,9 +44,9 @@ Links to mouse data:
   - TSS assignment
   - PolyA site assignment
   - exon chain
-- BED12 files per processed (ONT)[https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/processed/other/] long read
+- BED12 files per processed [ONT](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/scell/oxford_nanopore/mouse/processed/other/) long read
 
-We additionally have data from 6 human hippocampal samples available through the (NeMO)[https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/sncell/]
+We additionally have data from 6 human hippocampal samples available through the [NeMO](https://data.nemoarchive.org/biccn/grant/rf1_tilgner/tilgner/transcriptome/sncell/)
 
 If you have questions, please do not hesitate to open an issue or reach out over email to [me](mailto:ajoglekar@nygenome.org)
 or the corresponding author.
